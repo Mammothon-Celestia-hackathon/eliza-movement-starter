@@ -1,0 +1,7 @@
+{
+  "name": "Movement Agent",
+  "plugins": ["@elizaos/plugin-movement"],
+  "settings": {
+    "secrets": {}
+  }
+}
