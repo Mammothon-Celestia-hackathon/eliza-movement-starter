@@ -107,8 +107,8 @@ export default {
     _options: { [key: string]: unknown },
     callback?: HandlerCallback
   ): Promise<boolean> => {
-    elizaLogger.debug("Starting TRANSFER_MOVE handler...");
-    elizaLogger.debug("Message:", {
+    elizaLogger.info("Starting TRANSFER_MOVE handler...");
+    elizaLogger.info("Message:", {
       text: message.content?.text,
       userId: message.userId,
       action: message.content?.action,
@@ -116,11 +116,11 @@ export default {
 
     try {
       const privateKey = runtime.getSetting("MOVEMENT_PRIVATE_KEY");
-      elizaLogger.debug("Got private key:", privateKey ? "Present" : "Missing");
+      elizaLogger.info("Got private key:", privateKey ? "Present" : "Missing");
 
       const network = runtime.getSetting("MOVEMENT_NETWORK");
-      elizaLogger.debug("Network config:", network);
-      elizaLogger.debug(
+      elizaLogger.info("Network config:", network);
+      elizaLogger.info(
         "Available networks:",
         Object.keys(MOVEMENT_NETWORK_CONFIG)
       );

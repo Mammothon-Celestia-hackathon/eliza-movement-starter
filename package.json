@@ -4,12 +4,16 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
+    "rebuild": "cd plugin-movement && pnpm i && pnpm build && cd .. && pnpm i && pnpm build",
     "build": "tsup src/index.ts --format esm --dts",
     "start": "tsc && node --loader ts-node/esm src/index.ts",
     "clean": "./scripts/clean.sh",
     "start:service:all": "pm2 start pnpm --name=\"all\" --restart-delay=3000 --max-restarts=10 -- run start:all",
     "stop:service:all": "pm2 stop all",
-    "fix-better-sqlite": "cd node_modules/better-sqlite3 && pnpm build-release"
+    "fix-better-sqlite": "cd node_modules/better-sqlite3 && pnpm build-release",
+    "t-test": "pnpm vitest plugin-movement/src/tests/transfer.test.ts",
+    "vc-test": "pnpm vitest plugin-movement/src/tests/view-contract.test.ts",
+    "wallet-test": "pnpm vitest plugin-movement/src/tests/wallet.test.ts"
   },
   "dependencies": {
     "@elizaos/adapter-postgres": "0.25.6-alpha.1",
@@ -20,6 +24,7 @@
     "@elizaos/client-telegram": "0.25.6-alpha.1",
     "@elizaos/client-twitter": "0.25.6-alpha.1",
     "@elizaos/core": "0.25.6-alpha.1",
+    "@elizaos/plugin-anyone": "0.25.6-alpha.1",
     "@elizaos/plugin-bootstrap": "0.25.6-alpha.1",
     "@elizaos/plugin-image-generation": "0.25.6-alpha.1",
     "@elizaos/plugin-movement": "file:./plugin-movement",
@@ -44,9 +49,11 @@
     }
   },
   "devDependencies": {
+    "dotenv": "^16.4.7",
     "pm2": "5.4.3",
     "ts-node": "10.9.2",
     "tsup": "8.3.6",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^3.0.6"
   }
 }

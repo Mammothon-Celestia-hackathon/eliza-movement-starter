@@ -1,4 +1,4 @@
-import { Character, Clients, ModelProviderName } from "@elizaos/core";
+import { Character, ModelProviderName } from "@elizaos/core";
 import { movementPlugin } from "@elizaos/plugin-movement";
 
 export const character: Character = {

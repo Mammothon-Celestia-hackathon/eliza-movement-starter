@@ -12,3 +12,4 @@ db.sqlite
 
 TODO
 .turbo/
+.DS_Store

@@ -16,8 +16,7 @@ import { MOVEMENT_NETWORK_CONFIG } from "../constants";
 
 export interface ViewContractContent extends Content {
   contractAddress: string;
-  functionName: string;
-  functionArgs?: unknown[];
+  typeName: string;
 }
 
 function isViewContractContent(
@@ -26,36 +25,41 @@ function isViewContractContent(
   elizaLogger.debug("Validating view contract content:", content);
   return (
     typeof (content as ViewContractContent).contractAddress === "string" &&
-    typeof (content as ViewContractContent).functionName === "string"
+    typeof (content as ViewContractContent).typeName === "string" // TODO: add validate check ::
   );
 }
 
-const viewContractTemplate = `You are processing a contract state query request. Extract the contract address and function name from the message.
+const generateAPIUrl = (contractAddress: String, typeName: String): String => {
+  const rpcEndpoint = "https://aptos.testnet.bardock.movementlabs.xyz/v1";
+  const moduleAndType = "message::MessageHolder"; // Module and type for the resource
+  return `${rpcEndpoint}/accounts/${contractAddress}/resource/${typeName}`;
+};
 
-Example request: "get balance of 0x123..."
+// https://aptos.testnet.bardock.movementlabs.xyz/v1/accounts/d7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f/resource/0xd7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f::message::MessageHolder
+const viewContractTemplate = `You are a smart contract state viewer. Extract the contract address and type name from the message.
+
+Example request: "can you show me 0xd7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f::message::MessageHolder data?"
 Example response:
 \`\`\`json
 {
-    "contractAddress": "0x123...",
-    "functionName": "balance_of",
-    "functionArgs": ["0x123..."]
+    "contractAddress": "0xd7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f",
+    "typeName": "0xd7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f::message::MessageHolder"
 }
 \`\`\`
 
 Rules:
 1. The contract address always starts with "0x"
-2. The function name must be a valid identifier
-3. Return exact values found in the message
+2. The type name must follow the format 'CONTRACT_ADDRESS::MODULE_NAME::MODULE_TYPE'. It must have exactly two '::'.
+3. Return exact values found in the message.
 
 Recent messages:
 {{recentMessages}}
 
 Extract and return ONLY the following in a JSON block:
 - contractAddress: The smart contract address
-- functionName: The function to call
-- functionArgs: (optional) Any arguments to pass to the function
+- typeName: The contract resource type name
 
-Return ONLY the JSON block with these fields.`;
+Return ONLY the JSON block with these two fields.`;
 
 export default {
   name: "VIEW_CONTRACT_STATE",
@@ -84,8 +88,8 @@ export default {
     _options: { [key: string]: unknown },
     callback?: HandlerCallback
   ): Promise<boolean> => {
-    elizaLogger.debug("Starting VIEW_CONTRACT_STATE handler...");
-    elizaLogger.debug("Message:", {
+    elizaLogger.info("Starting VIEW_CONTRACT_STATE handler...");
+    elizaLogger.info("Message:", {
       text: message.content?.text,
       userId: message.userId,
       action: message.content?.action,
@@ -93,7 +97,7 @@ export default {
 
     try {
       const network = runtime.getSetting("MOVEMENT_NETWORK");
-      elizaLogger.debug("Network config:", network);
+      elizaLogger.info("Network config:", network);
 
       const aptosClient = new Aptos(
         new AptosConfig({
@@ -101,52 +105,52 @@ export default {
           fullnode: MOVEMENT_NETWORK_CONFIG[network].fullnode,
         })
       );
-      elizaLogger.debug(
+      elizaLogger.info(
         "Created Aptos client with network:",
         MOVEMENT_NETWORK_CONFIG[network].fullnode
       );
 
-      const currentState = await runtime.updateRecentMessageState(state);
-      const viewContext = composeContext({
+      // Initialize or update state
+      let currentState: State;
+      if (!state) {
+        currentState = (await runtime.composeState(message)) as State;
+      } else {
+        currentState = await runtime.updateRecentMessageState(state);
+      }
+
+      // Compose transfer context
+      const viewContractContext = composeContext({
         state: currentState,
         template: viewContractTemplate,
       });
+
+      // Generate transfer content
       const content = await generateObjectDeprecated({
         runtime,
-        context: viewContext,
+        context: viewContractContext,
         modelClass: ModelClass.SMALL,
       });
 
+      // Validate content
       if (!isViewContractContent(content)) {
-        console.error("Invalid content for VIEW_CONTRACT_STATE action.");
+        console.error("Invalid content for VIEW CONTRACT action.");
         if (callback) {
           callback({
-            text: "Unable to process contract state request. Invalid content provided.",
-            content: { error: "Invalid contract query content" },
+            text: "Unable to process view contract request. Invalid content provided.",
+            content: { error: "Invalid view contract content" },
           });
         }
         return false;
       }
 
-      const response = await aptosClient.view({
-        function: `${content.contractAddress}::module::${content.functionName}`,
-        arguments: content.functionArgs || [],
-      });
-      elizaLogger.debug("Contract query response:", response);
+      const resourceUrl = generateAPIUrl(
+        content.contractAddress,
+        content.typeName
+      );
+      elizaLogger.info(`Resource URL: ${resourceUrl}`);
 
-      if (callback) {
-        callback({
-          text: `Contract state retrieved for ${
-            content.functionName
-          }: ${JSON.stringify(response)}`,
-          content: {
-            success: true,
-            contractAddress: content.contractAddress,
-            functionName: content.functionName,
-            result: response,
-          },
-        });
-      }
+      const response = await fetch(resourceUrl.toString());
+      elizaLogger.info(response);
 
       return true;
     } catch (error) {
@@ -164,11 +168,31 @@ export default {
     [
       {
         user: "{{user1}}",
-        content: { text: "get balance of 0x123..." },
+        content: {
+          text: "can you show me 0xd7ae4e1e8d4486450936d8fdbb93af0cba8e1ae00c00f82653f76c5d65d76a6f::message::MessageHolder data?",
+        },
       },
       {
         user: "{{user2}}",
-        content: { text: "Fetching balance...", action: "VIEW_CONTRACT_STATE" },
+        content: {
+          text: "Fetching the contract state...",
+          action: "VIEW_CONTRACT",
+        },
+      },
+    ],
+    [
+      {
+        user: "{{user1}}",
+        content: {
+          text: "show me the contract state for 0x1234567890abcdef1234567890abcdef12345678::token::TokenHolder",
+        },
+      },
+      {
+        user: "{{user2}}",
+        content: {
+          text: "Looking up the TokenHolder data...",
+          action: "VIEW_CONTRACT",
+        },
       },
     ],
   ] as ActionExample[][],

@@ -13,9 +13,9 @@ describe("Movement Transfer Action", () => {
       const validMessage = "send 1 move to 0x123";
       const invalidMessage = "hello world";
 
-      // expect(
-      //   transferAction.shouldHandle({ content: { text: validMessage } })
-      // ).toBe(true);
+      // expect(transferAction.handler({ content: { text: validMessage } })).toBe(
+      //   true
+      // );
       // expect(
       //   transferAction.shouldHandle({ content: { text: invalidMessage } })
       // ).toBe(false);

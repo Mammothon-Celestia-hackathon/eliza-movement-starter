@@ -1,15 +1,19 @@
+export * from "./actions/set-message";
+export * from "./actions/transfer";
+export * from "./providers/wallet";
+
 import type { Plugin } from "@elizaos/core";
 import transferToken from "./actions/transfer";
-import { WalletProvider, walletProvider } from "./providers/wallet";
-
-export { WalletProvider, transferToken as TransferMovementToken };
+import { setMessaageAction } from "./actions/set-message";
+import { walletProvider } from "./providers/wallet";
 
 export const movementPlugin: Plugin = {
-    name: "movement",
-    description: "Movement Network Plugin for Eliza",
-    actions: [transferToken],
-    evaluators: [],
-    providers: [walletProvider],
+  name: "movement",
+  description: "Movement Network Plugin for Eliza",
+  providers: [walletProvider],
+  evaluators: [],
+  services: [],
+  actions: [setMessaageAction, transferToken],
 };
 
 export default movementPlugin;
