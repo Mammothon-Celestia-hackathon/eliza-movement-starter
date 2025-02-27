@@ -27,22 +27,6 @@ export interface ViewContractContent extends Content {
   typeName: string;
 }
 
-function isViewContractContent(
-  content: unknown
-): content is ViewContractContent {
-  elizaLogger.debug("Validating view contract content:", content);
-  return (
-    typeof (content as ViewContractContent).contractAddress === "string" &&
-    typeof (content as ViewContractContent).typeName === "string" // TODO: add validate check ::
-  );
-}
-
-const generateAPIUrl = (contractAddress: String, typeName: String): String => {
-  const rpcEndpoint = "https://aptos.testnet.bardock.movementlabs.xyz/v1";
-  const moduleAndType = "message::MessageHolder"; // Module and type for the resource
-  return `${rpcEndpoint}/accounts/${contractAddress}/resource/${typeName}`;
-};
-
 import { setMessageTemplate } from "../templates";
 
 export { setMessageTemplate };

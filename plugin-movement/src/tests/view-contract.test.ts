@@ -6,6 +6,7 @@ import {
   AptosConfig,
   Ed25519PrivateKey,
   Network,
+  MoveStructId,
   PrivateKey,
   PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
