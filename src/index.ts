@@ -21,6 +21,8 @@ import {
   loadCharacters,
   parseArguments,
 } from "./config/index.ts";
+import { movementPlugin } from "@elizaos/plugin-movement";
+
 import { initializeDatabase } from "./database/index.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -140,6 +142,7 @@ const startAgents = async () => {
   console.log("characters", characters);
   try {
     for (const character of characters) {
+      character.plugins.push(movementPlugin);
       await startAgent(character, directClient as DirectClient);
     }
   } catch (error) {
